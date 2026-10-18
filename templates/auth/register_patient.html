@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Patient registration{% endblock %}
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">PATIENT SERVICES</p>
+    <h1>Create your patient account</h1>
+    <p>Enter your details to register. All fields are required.</p>
+</section>
+<form method="post" action="{{ url_for('auth.register') }}" class="card form-card">
+    <div class="form-section">
+        <h2>Login details</h2>
+        <div class="form-grid">
+            <div class="field"><label for="username">Username</label><input id="username" name="username" autocomplete="username" required></div>
+            <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" minlength="8" pattern="(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s]).{8,}" title="Use at least 8 characters with uppercase and lowercase letters, a number, and a special character." autocomplete="new-password" required><small>Use at least 8 characters with uppercase and lowercase letters, a number, and a special character.</small></div>
+        </div>
+    </div>
+    <div class="form-section">
+        <h2>Personal information</h2>
+        <div class="form-grid">
+            <div class="field"><label for="full_name">Full name</label><input id="full_name" name="full_name" autocomplete="name" required></div>
+            <div class="field"><label for="email">Email address</label><input id="email" name="email" type="email" pattern="[A-Za-z0-9]+([._+-][A-Za-z0-9]+)*@(gmail\.com|yahoo\.com|yahoo\.co\.in|outlook\.com|nmims\.in)" title="Enter a username and use gmail.com, yahoo.com, yahoo.co.in, outlook.com, or nmims.in." autocomplete="email" required></div>
+            <div class="field"><label for="phone">Phone number</label><input id="phone" name="phone" type="tel" pattern="\s*[6-9][0-9]{9}\s*" inputmode="numeric" title="Enter 10 digits beginning with 6, 7, 8, or 9. Surrounding spaces are ignored." autocomplete="tel" required></div>
+            <div class="field"><label for="dob">Date of birth</label><input id="dob" name="dob" type="date" max="{{ today }}" required></div>
+            <div class="field"><label for="gender">Gender</label><select id="gender" name="gender" required><option value="">Select gender</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+            <div class="field"><label for="blood_group">Blood group</label><select id="blood_group" name="blood_group" required><option value="">Select blood group</option>{% for group in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] %}<option value="{{ group }}">{{ group }}</option>{% endfor %}</select></div>
+            <div class="field field-span"><label for="address">Address</label><textarea id="address" name="address" rows="3" autocomplete="street-address" required></textarea></div>
+            <div class="field"><label for="emergency_contact">Emergency contact</label><input id="emergency_contact" name="emergency_contact" type="tel" pattern="\s*[6-9][0-9]{9}\s*" inputmode="numeric" title="Enter 10 digits beginning with 6, 7, 8, or 9. Surrounding spaces are ignored." required></div>
+        </div>
+    </div>
+    <div class="form-actions"><button class="button button-primary" type="submit">Create patient account</button><a class="button button-quiet" href="{{ url_for('auth.login') }}">Cancel</a></div>
+</form>
+{% endblock %}

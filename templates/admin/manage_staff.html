@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Manage staff{% endblock %}
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">ADMINISTRATION</p>
+    <h1>Staff management</h1>
+    <p>Create receptionist accounts and manage staff access status.</p>
+</section>
+<form method="post" action="{{ url_for('admin.manage_staff') }}" class="card form-card">
+    <h2 class="form-title">{{ 'Edit staff member' if editing_staff else 'Add staff member' }}</h2>
+    {% if editing_staff %}<input type="hidden" name="staff_id" value="{{ editing_staff.staff_id }}">{% endif %}
+    <input type="hidden" name="role" value="receptionist">
+    <div class="form-grid">
+        <div class="field"><label for="username">Username</label><input id="username" name="username" maxlength="50" value="{{ editing_staff.username if editing_staff else '' }}" required></div>
+        {% if not editing_staff %}
+        <div class="field"><label for="password">Temporary password</label><input id="password" name="password" type="password" minlength="8" pattern="(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s]).{8,}" title="Use at least 8 characters with uppercase and lowercase letters, a number, and a special character." required></div>
+        {% endif %}
+        <div class="field"><label for="full_name">Full name</label><input id="full_name" name="full_name" maxlength="100" value="{{ editing_staff.full_name if editing_staff else '' }}" required></div>
+        <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" maxlength="100" pattern="[A-Za-z0-9]+([._+-][A-Za-z0-9]+)*@(gmail\.com|yahoo\.com|yahoo\.co\.in|outlook\.com|nmims\.in)" title="Enter an approved email address." value="{{ editing_staff.email if editing_staff else '' }}" required></div>
+        <div class="field"><label for="phone">Phone</label><input id="phone" name="phone" type="tel" maxlength="20" pattern="\s*[6-9][0-9]{9}\s*" inputmode="numeric" title="Enter 10 digits beginning with 6, 7, 8, or 9." value="{{ editing_staff.phone if editing_staff else '' }}" required></div>
+        <div class="field"><label for="role_title">Job title</label><input id="role_title" name="role_title" maxlength="50" value="{{ editing_staff.role_title if editing_staff else '' }}" required></div>
+        <div class="field"><label for="department">Department</label><input id="department" name="department" maxlength="100" value="{{ editing_staff.department if editing_staff else '' }}" required></div>
+    </div>
+    <div class="form-actions">
+        <button class="button button-primary" type="submit">{{ 'Save changes' if editing_staff else 'Create staff account' }}</button>
+        {% if editing_staff %}<a class="button button-quiet" href="{{ url_for('admin.manage_staff') }}">Cancel editing</a>{% endif %}
+    </div>
+</form>
+<section class="card panel">
+    <div class="panel-heading"><div><p class="eyebrow">TEAM DIRECTORY</p><h2>Staff accounts</h2></div></div>
+    {% if staff_members %}
+    <div class="table-wrap"><table><thead><tr><th>Name</th><th>Job title</th><th>Department</th><th>Role</th><th>Contact</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+    {% for member in staff_members %}
+        <tr>
+            <td><strong>{{ member.full_name }}</strong><small>{{ member.username }}</small></td>
+            <td>{{ member.role_title }}</td><td>{{ member.department }}</td><td>{{ member.role|title }}</td>
+            <td>{{ member.email }}<small>{{ member.phone }}</small></td>
+            <td><span class="status status-{{ member.status }}">{{ member.status|title }}</span></td>
+            <td class="staff-actions">
+                {% if member.role == 'receptionist' %}
+                <a class="button button-small button-primary" href="{{ url_for('admin.manage_staff', edit=member.id) }}">Edit</a>
+                <form method="post" action="{{ url_for('admin.toggle_staff_status', staff_id=member.id) }}" onsubmit="return window.confirm('Change this staff account status?');">
+                    <input type="hidden" name="confirmed" value="1">
+                    <button class="button button-small {% if member.status == 'active' %}button-danger{% else %}button-primary{% endif %}" type="submit">{% if member.status == 'active' %}Deactivate{% else %}Activate{% endif %}</button>
+                </form>
+                {% else %}<span class="muted-note">Protected account</span>{% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">No staff records are available.</div>{% endif %}
+</section>
+{% endblock %}

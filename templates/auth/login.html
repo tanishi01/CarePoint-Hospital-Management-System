@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<section class="auth-layout">
+    <div class="auth-intro">
+        <p class="eyebrow">WELCOME TO CAREPOINT</p>
+        <h1>Your care, connected.</h1>
+        <p>Sign in to view your hospital workspace, coordinate care, and stay up to date.</p>
+        <div class="intro-note"><span class="note-icon">+</span><span>One secure place for your hospital services.</span></div>
+    </div>
+    <div class="card auth-card">
+        <div class="section-heading">
+            <p class="eyebrow">ACCOUNT ACCESS</p>
+            <h2>Sign in</h2>
+            <p>Enter your registered account details to continue.</p>
+        </div>
+        <form method="post" action="{{ url_for('auth.login') }}" class="form-stack">
+            <input type="hidden" name="next" value="{{ next or '' }}">
+            <div class="field">
+                <label for="username">Username</label>
+                <input id="username" name="username" type="text" autocomplete="username" required autofocus>
+            </div>
+            <div class="field">
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" required>
+            </div>
+            <p class="form-footnote"><a href="{{ url_for('auth.forgot_password') }}">Forgot password?</a></p>
+            <button class="button button-primary button-full" type="submit">Sign in securely</button>
+        </form>
+        <p class="form-footnote">New patient? <a href="{{ url_for('auth.register') }}">Create a patient account</a></p>
+    </div>
+</section>
+{% endblock %}

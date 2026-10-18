@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Doctor appointments{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">DOCTOR WORKSPACE</p><h1>Appointments</h1><p>Review appointment requests, update their status, and open patient consultations.</p></section>
+<section class="card panel">
+    {% if appointments %}
+    <div class="table-wrap"><table><thead><tr><th>Date &amp; time</th><th>Patient</th><th>Reason</th><th>Status</th><th>Appointment actions</th><th>Clinical</th></tr></thead><tbody>
+    {% for appointment in appointments %}
+        <tr>
+            <td>{{ appointment.appointment_date }}<small>{{ appointment.appointment_time }}</small></td>
+            <td><strong>{{ appointment.patient_name }}</strong><small>{{ appointment.age }} years · {{ appointment.gender }} · {{ appointment.blood_group }}</small><small>{{ appointment.phone }}</small></td>
+            <td>{{ appointment.reason }}</td>
+            <td><span class="status status-{{ appointment.status }}">{{ appointment.status|replace('_', ' ')|title }}</span></td>
+            <td>
+                {% if appointment.status in ['pending', 'approved', 'rescheduled'] %}
+                <form method="post" action="{{ url_for('doctor.appointment_action', appointment_id=appointment.id) }}" class="action-form">
+                    <div class="inline-controls">{% if appointment.status == 'pending' %}<button class="button button-small" type="submit" name="action" value="approve">Approve</button>{% endif %}<button class="button button-small doctor-cancel-button" type="submit" name="action" value="cancel" onclick="return window.confirm('Cancel this appointment?')">Cancel</button></div>
+                    <label class="visually-hidden" for="new-date-{{ appointment.id }}">New date</label><input id="new-date-{{ appointment.id }}" name="new_date" type="date" min="{{ today }}" aria-label="Reschedule date">
+                    <label class="visually-hidden" for="new-time-{{ appointment.id }}">New time</label><input id="new-time-{{ appointment.id }}" name="new_time" type="time" aria-label="Reschedule time">
+                    <button class="button button-quiet button-small" type="submit" name="action" value="reschedule">Reschedule</button>
+                </form>
+                {% else %}<span class="muted-note">No status actions</span>{% endif %}
+            </td>
+            <td class="row-actions"><a class="button button-small" href="{{ url_for('doctor.consultation', appointment_id=appointment.id) }}">Consultation</a><a href="{{ url_for('doctor.patient_history', patient_id=appointment.patient_id) }}">Patient history</a></td>
+        </tr>
+    {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">No appointments are assigned to your account.</div>{% endif %}
+</section>
+{% endblock %}

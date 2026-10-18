@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Low-stock alerts{% endblock %}
+{% block content %}
+<section class="page-heading heading-with-action"><div><p class="eyebrow">PHARMACY · INVENTORY CONTROL</p><h1>Low-stock alerts</h1><p>Medicines with current stock at or below the configured threshold.</p></div><a class="button button-quiet" href="{{ url_for('pharmacy.inventory') }}">Full inventory</a></section>
+<section class="card panel">
+    {% if medicines %}
+    <div class="table-wrap"><table><thead><tr><th>Medicine</th><th>Generic name</th><th>Available</th><th>Minimum threshold</th><th>Unit price</th><th>Replenish</th></tr></thead><tbody>
+    {% for medicine in medicines %}
+        <tr><td>{{ medicine.name }}</td><td>{{ medicine.generic_name }}</td><td class="stock-low">{{ medicine.stock_quantity }}</td><td>{{ medicine.min_stock_threshold }}</td><td>₹{{ "%.2f"|format(medicine.unit_price|float) }}</td><td><form method="post" action="{{ url_for('pharmacy.update_stock', medicine_id=medicine.id) }}" class="stock-form"><label class="visually-hidden" for="restock-{{ medicine.id }}">Quantity to add</label><input id="restock-{{ medicine.id }}" name="add_quantity" type="number" min="1" placeholder="Units" required><button class="button button-small" type="submit">Add stock</button></form></td></tr>
+    {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">No medicines are currently at or below their minimum stock threshold.</div>{% endif %}
+</section>
+{% endblock %}

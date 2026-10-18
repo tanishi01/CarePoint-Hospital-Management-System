@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Reception overview{% endblock %}
+{% block content %}
+<section class="page-heading heading-with-action">
+    <div><p class="eyebrow">FRONT DESK</p><h1>Reception overview</h1><p>Coordinate today's appointments and patient arrivals.</p></div>
+    <a class="button button-primary" href="{{ url_for('appointments.book_appointment') }}">Book an appointment</a>
+</section>
+<section class="metric-grid metric-grid-three">
+    <article class="metric-card"><span>Today's appointments</span><strong>{{ today_appointments|default([])|length }}</strong></article>
+    <article class="metric-card"><span>Awaiting check-in</span><strong>{{ pending_checkins|default([])|length }}</strong></article>
+    <article class="metric-card"><span>Checked in</span><strong>{{ checked_in|default([])|length }}</strong></article>
+</section>
+<section class="card panel">
+    <div class="panel-heading"><div><p class="eyebrow">ARRIVALS</p><h2>Pending check-ins</h2></div><a href="{{ url_for('receptionist.manage_appointments') }}">All appointments</a></div>
+    {% if checkin_data_unavailable|default(false) %}
+    <div class="empty-state">Check-in information is temporarily unavailable. Please try again.</div>
+    {% elif pending_checkins %}
+    <div class="table-wrap"><table><thead><tr><th>Time</th><th>Patient</th><th>Doctor</th><th>Room</th><th>Status</th><th>Action</th></tr></thead><tbody>
+    {% for appointment in pending_checkins %}
+        <tr><td>{{ appointment.appointment_time }}</td><td>{{ appointment.patient_name }}</td><td>{{ appointment.doctor_name }}</td><td>{{ appointment.room_number }}</td><td><span class="status status-{{ appointment.status }}">{{ appointment.status|title }}</span></td><td><form method="post" action="{{ url_for('receptionist.checkin_patient', appointment_id=appointment.id) }}"><button class="button button-small" type="submit">Check in</button></form></td></tr>
+    {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">No patients are currently waiting to check in.</div>{% endif %}
+</section>
+<section class="card panel">
+    <div class="panel-heading"><div><p class="eyebrow">RECENT BILLING</p><h2>Latest invoices</h2></div><a class="button button-quiet" href="{{ url_for('receptionist.manage_billing') }}">Manage billing</a></div>
+    {% if recent_bills %}
+    <div class="table-wrap"><table><thead><tr><th>Invoice</th><th>Patient</th><th>Created</th><th>Total</th><th>Status</th></tr></thead><tbody>
+    {% for bill in recent_bills %}
+        <tr><td>#{{ bill.id }}</td><td>{{ bill.patient_name }}</td><td>{{ bill.created_at }}</td><td>₹{{ "%.2f"|format(bill.total_amount|float) }}</td><td><span class="status status-{{ bill.status }}">{{ bill.status|replace('_', ' ')|title }}</span></td></tr>
+    {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">No bills have been created yet.</div>{% endif %}
+</section>
+<section class="quick-links">
+    <a class="quick-link" href="{{ url_for('receptionist.create_bill') }}"><strong>Create an invoice</strong><span>Bill a completed appointment or bed allocation</span></a>
+    <a class="quick-link" href="{{ url_for('beds.bed_availability') }}"><strong>Bed availability</strong><span>Allocate or discharge a patient</span></a>
+</section>
+{% endblock %}

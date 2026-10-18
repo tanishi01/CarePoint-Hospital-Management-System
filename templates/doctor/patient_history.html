@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Patient history{% endblock %}
+{% block content %}
+<section class="page-heading heading-with-action"><div><p class="eyebrow">DOCTOR WORKSPACE</p><h1>Patient history</h1><p>Review patient details and recorded consultations.</p></div><a class="button button-quiet" href="{{ url_for('doctor.appointments') }}">Back to appointments</a></section>
+{% if patient %}
+<section class="card patient-banner">
+    <div class="patient-banner-main"><span class="doctor-avatar">{{ patient.full_name[:1]|upper }}</span><div><h2>{{ patient.full_name }}</h2><p>{{ patient.age }} years · {{ patient.gender }} · Blood group {{ patient.blood_group }}</p><small>{{ patient.email }} · {{ patient.phone }}</small></div></div>
+</section>
+{% endif %}
+<section class="card panel">
+    <div class="panel-heading"><div><p class="eyebrow">CLINICAL RECORD</p><h2>Consultation history</h2></div></div>
+    {% if medical_history %}
+    <div class="record-list">
+        {% for record in medical_history %}
+        <article class="history-entry"><p class="eyebrow">{{ record.consultation_date }} · Visit {{ record.appointment_date }}</p><h3>{{ record.diagnosis }}</h3><p>{{ record.treatment_notes }}</p><small>Recorded by {{ record.doctor_name }}</small></article>
+        {% endfor %}
+    </div>
+    {% else %}<div class="empty-state">No medical history is available for this patient.</div>{% endif %}
+</section>
+{% endblock %}

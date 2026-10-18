@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Administrator overview{% endblock %}
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">ADMINISTRATION</p>
+    <h1>Hospital overview</h1>
+    <p>Current operations at a glance.</p>
+</section>
+<section class="metric-grid">
+    <article class="metric-card"><span>Registered patients</span><strong>{{ total_patients|default(0) }}</strong></article>
+    <article class="metric-card"><span>Active doctors</span><strong>{{ total_doctors|default(0) }}</strong></article>
+    <article class="metric-card"><span>Today's appointments</span><strong>{{ today_appointments|default(0) }}</strong></article>
+    <article class="metric-card"><span>Bed occupancy</span><strong>{{ occupancy_rate|default(0) }}%</strong><small>{{ occupied_beds|default(0) }} of {{ total_beds|default(0) }} beds</small></article>
+</section>
+<section class="summary-strip">
+    <div><span class="summary-label">Outstanding dues</span><strong>₹{{ "%.2f"|format(pending_dues|default(0)|float) }}</strong></div>
+    <a class="summary-alert" href="{{ url_for('pharmacy.low_stock_alerts') }}">{{ low_stock_count|default(0) }} medicine item(s) at or below minimum stock <span>View alerts &rarr;</span></a>
+</section>
+<section class="card leave-dashboard-notice" aria-live="polite">
+    <div>
+        <p class="eyebrow">DOCTOR LEAVE</p>
+        {% if pending_leave_count is none %}
+        <h2>Pending leave requests unavailable</h2>
+        <p>Check the database setup before reviewing leave requests.</p>
+        {% elif pending_leave_count %}
+        <h2>{{ pending_leave_count }} pending doctor-leave request(s)</h2>
+        <p>Review requests and check affected appointments.</p>
+        {% else %}
+        <h2>No pending doctor-leave requests</h2>
+        <p>There are no leave requests waiting for review.</p>
+        {% endif %}
+    </div>
+    <a class="button button-quiet" href="{{ url_for('admin.doctor_leave_requests') }}">Manage doctor leave</a>
+</section>
+<section class="card panel">
+    <div class="panel-heading"><div><p class="eyebrow">LATEST ACTIVITY</p><h2>Recent appointments</h2></div></div>
+    {% if recent_appointments %}
+    <div class="table-wrap"><table><thead><tr><th>Patient</th><th>Doctor</th><th>Date</th><th>Time</th><th>Status</th></tr></thead><tbody>
+    {% for appointment in recent_appointments %}
+        <tr><td>{{ appointment.patient_name }}</td><td>{{ appointment.doctor_name }}</td><td>{{ appointment.appointment_date }}</td><td>{{ appointment.appointment_time }}</td><td><span class="status status-{{ appointment.status }}">{{ appointment.status|replace('_', ' ')|title }}</span></td></tr>
+    {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">No appointment activity to display yet.</div>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Doctor leave requests{% endblock %}
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">ADMINISTRATION · DOCTOR LEAVE</p>
+    <h1>Doctor leave requests</h1>
+    <p>Review requests and confirm the future appointments that approval would cancel.</p>
+</section>
+
+<section class="card panel">
+    {% if leave_requests %}
+    <div class="leave-request-list">
+        {% for leave in leave_requests %}
+        <article class="leave-request-card">
+            <div class="leave-request-heading">
+                <div>
+                    <p class="eyebrow">{{ leave.leave_date }} · {{ leave.requested_hours }}</p>
+                    <h2>{{ leave.doctor_name }}</h2>
+                </div>
+                <span class="status status-{{ leave.status }}">{{ leave.status|title }}</span>
+            </div>
+            <p class="leave-request-reason">{{ leave.reason }}</p>
+            <small>Submitted {{ leave.submitted_at }}</small>
+
+            {% if leave.status == 'pending' %}
+            {% set affected = leave.affected_appointments|default([], true) %}
+            {% set patient_count = leave.affected_patient_count|default(0, true) %}
+            <section class="leave-impact" aria-label="Affected appointment impact">
+                <h3>Future appointments affected</h3>
+                <p><strong>{{ affected|length }}</strong> appointment(s) for <strong>{{ patient_count }}</strong> patient(s)</p>
+                {% if affected %}
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Patient</th><th>Appointment time</th><th>Status</th></tr></thead>
+                        <tbody>
+                        {% for appointment in affected %}
+                            <tr>
+                                <td>{{ appointment.patient_name }}</td>
+                                <td>{{ appointment.appointment_time }}</td>
+                                <td><span class="status status-{{ 'in_progress' if appointment.status == 'checked_in' else appointment.status }}">{{ appointment.status|replace('_', ' ')|title }}</span></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="muted-note">No future appointments fall within this request.</p>
+                {% endif %}
+            </section>
+
+            <div class="leave-decision-grid">
+                <form class="leave-approve-form" method="post" action="{{ url_for('admin.review_doctor_leave', leave_id=leave.id) }}" data-affected-count="{{ affected|length }}">
+                    <input type="hidden" name="action" value="approve">
+                    <input type="hidden" name="confirmed" value="0">
+                    {% if affected %}
+                    <div class="field">
+                        <label for="cancel-reason-{{ leave.id }}">Cancellation reason</label>
+                        <input id="cancel-reason-{{ leave.id }}" name="cancellation_reason" value="Cancelled due to emergency" maxlength="500" required>
+                    </div>
+                    {% endif %}
+                    <button class="button button-primary" type="submit">Approve leave</button>
+                </form>
+                <form method="post" action="{{ url_for('admin.review_doctor_leave', leave_id=leave.id) }}" onsubmit="return window.confirm('Reject this doctor leave request?');">
+                    <input type="hidden" name="action" value="reject">
+                    <div class="field">
+                        <label for="reject-reason-{{ leave.id }}">Rejection reason</label>
+                        <input id="reject-reason-{{ leave.id }}" name="rejection_reason" maxlength="2000" required>
+                    </div>
+                    <button class="button button-danger" type="submit">Reject request</button>
+                </form>
+            </div>
+            {% else %}
+                {% if leave.rejection_reason %}<p class="leave-outcome"><strong>Rejection reason:</strong> {{ leave.rejection_reason }}</p>{% endif %}
+                {% if leave.cancellation_reason %}<p class="leave-outcome"><strong>Cancellation reason:</strong> {{ leave.cancellation_reason }}</p>{% endif %}
+            {% endif %}
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">There are no doctor leave requests.</div>
+    {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+    document.querySelectorAll('.leave-approve-form').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            var count = Number(form.dataset.affectedCount || 0);
+            if (count && !window.confirm(
+                'Approve this leave and cancel ' + count + ' affected future appointment(s)?'
+            )) {
+                event.preventDefault();
+                return;
+            }
+            form.querySelector('[name="confirmed"]').value = '1';
+        });
+    });
+</script>
+{% endblock %}

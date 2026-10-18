@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Appointment desk{% endblock %}
+{% block content %}
+<section class="page-heading heading-with-action"><div><p class="eyebrow">FRONT DESK</p><h1>Appointment desk</h1><p>Review the hospital appointment schedule and patient status.</p></div><a class="button button-primary" href="{{ url_for('appointments.book_appointment') }}">Book appointment</a></section>
+<section class="card panel">
+    {% if appointments %}
+    <div class="table-wrap"><table><thead><tr><th>Date &amp; time</th><th>Patient</th><th>Doctor</th><th>Department</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead><tbody>
+    {% for appointment in appointments %}
+        <tr><td>{{ appointment.appointment_date }}<small>{{ appointment.appointment_time }}</small></td><td>{{ appointment.patient_name }}<small>{{ appointment.phone }}</small></td><td>{{ appointment.doctor_name }}</td><td>{{ appointment.department }}</td><td>{{ appointment.reason }}</td><td><span class="status status-{{ appointment.status }}">{{ appointment.status|replace('_', ' ')|title }}</span></td><td>{% if appointment.can_checkin %}<form method="post" action="{{ url_for('receptionist.checkin_patient', appointment_id=appointment.id) }}"><button class="button button-small" type="submit">Check in</button></form>{% else %}<span class="muted-note">—</span>{% endif %}</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">No appointment records were found.</div>{% endif %}
+</section>
+{% endblock %}

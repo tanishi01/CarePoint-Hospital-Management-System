@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Doctor schedule{% endblock %}
+{% block content %}
+<section class="page-heading heading-with-action"><div><p class="eyebrow">ADMINISTRATION · SCHEDULE</p><h1>{{ doctor.full_name }}</h1><p>{{ doctor.department }} · {{ doctor.specialization }} · Configure one availability window per weekday.</p></div><a class="button button-quiet" href="{{ url_for('admin.manage_doctors') }}">Back to doctors</a></section>
+<form method="post" action="{{ url_for('admin.doctor_schedules', doctor_id=doctor.id) }}" class="card form-card">
+    <h2 class="form-title">Add or update a day</h2>
+    <div class="form-grid">
+        <div class="field"><label for="day_of_week">Day of week</label><select id="day_of_week" name="day_of_week" required><option value="">Choose a day</option>{% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}<option value="{{ day }}">{{ day }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="start_time">Start time</label><input id="start_time" name="start_time" type="time" required></div>
+        <div class="field"><label for="end_time">End time</label><input id="end_time" name="end_time" type="time" required></div>
+        <div class="field"><label for="break_start">Break starts (optional)</label><input id="break_start" name="break_start" type="time"><small>Leave both break fields empty if there is no break.</small></div>
+        <div class="field"><label for="break_end">Break ends (optional)</label><input id="break_end" name="break_end" type="time"></div>
+        <div class="field"><label for="slot_duration_mins">Appointment duration (minutes)</label><input id="slot_duration_mins" name="slot_duration_mins" type="number" min="1" value="30" required></div>
+    </div>
+    <div class="form-actions"><button class="button button-primary" type="submit">Save schedule</button></div>
+</form>
+<section class="card panel">
+    <div class="panel-heading"><div><p class="eyebrow">CURRENT AVAILABILITY</p><h2>Weekly schedule</h2></div></div>
+    {% if schedules %}
+    <div class="table-wrap"><table><thead><tr><th>Day</th><th>Hours</th><th>Break</th><th>Slot duration</th><th>Action</th></tr></thead><tbody>
+    {% for schedule in schedules %}
+        {% set impact = schedule_impacts.get(schedule.day_of_week, {'appointment_count': 0, 'patient_count': 0}) %}
+        <tr>
+            <td>{{ schedule.day_of_week }}</td>
+            <td>{{ schedule.start_time }} – {{ schedule.end_time }}</td>
+            <td>{% if schedule.break_start and schedule.break_end %}{{ schedule.break_start }} – {{ schedule.break_end }}{% else %}None{% endif %}</td>
+            <td>{{ schedule.slot_duration_mins }} minutes</td>
+            <td>
+                <form class="remove-schedule-form" method="post" action="{{ url_for('admin.delete_doctor_schedule', doctor_id=doctor.id, schedule_id=schedule.id) }}">
+                    <input type="hidden" name="confirmed" value="0">
+                    <input type="hidden" name="expected_appointment_count" value="{{ impact.appointment_count }}">
+                    <input type="hidden" name="expected_patient_count" value="{{ impact.patient_count }}">
+                    <p class="remove-schedule-impact">
+                        {{ impact.appointment_count }} future appointment(s) for
+                        {{ impact.patient_count }} patient(s)
+                    </p>
+                    {% if impact.appointment_count %}
+                    <div class="field remove-schedule-reason">
+                        <label for="cancellation-reason-{{ schedule.id }}">Cancellation reason</label>
+                        <input id="cancellation-reason-{{ schedule.id }}" name="cancellation_reason" value="Cancelled due to emergency" maxlength="500" required>
+                    </div>
+                    {% endif %}
+                    <button class="button button-small schedule-remove-button" type="submit">Remove day</button>
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">No schedule has been configured.</div>{% endif %}
+</section>
+<section class="card panel doctor-date-availability">
+    <div class="panel-heading"><div><p class="eyebrow">DAILY APPOINTMENTS</p><h2>Schedule availability</h2><p class="muted-note">View this doctor's registered hours and bookings for a selected date.</p></div></div>
+    <div class="field schedule-date-field"><label for="schedule-date">Appointment date</label><input id="schedule-date" type="date" value="{{ today }}"></div>
+    <p id="daily-schedule-summary" class="schedule-summary" aria-live="polite">Choose a date to view working hours and breaks.</p>
+    <p id="daily-schedule-message" class="slot-message" role="status" aria-live="polite"></p>
+    <div class="schedule-status-legend" aria-label="Appointment status legend">
+        <span class="schedule-status-available">Available</span>
+        <span class="status status-pending">Pending</span>
+        <span class="status status-approved">Approved</span>
+        <span class="status status-in_progress">In progress</span>
+        <span class="status status-completed">Completed</span>
+        <span class="status status-cancelled">Cancelled</span>
+    </div>
+    <div id="daily-slot-grid" class="daily-slot-grid" aria-live="polite"></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+    (function () {
+        var dateInput = document.getElementById('schedule-date');
+        var summary = document.getElementById('daily-schedule-summary');
+        var message = document.getElementById('daily-schedule-message');
+        var grid = document.getElementById('daily-slot-grid');
+        var requestNumber = 0;
+        var endpoint = '{{ url_for("admin.doctor_schedule_availability", doctor_id=doctor.id) }}';
+
+        function renderSlots(slots) {
+            grid.replaceChildren();
+            (slots || []).forEach(function (slot) {
+                var card = document.createElement('article');
+                card.className = 'daily-slot-card daily-slot-' + slot.availability;
+
+                var heading = document.createElement('div');
+                heading.className = 'daily-slot-heading';
+                var time = document.createElement('strong');
+                time.textContent = slot.time;
+                var availability = document.createElement('span');
+                availability.className = 'status status-' + slot.availability;
+                availability.textContent = slot.availability === 'break'
+                    ? 'Break'
+                    : (slot.availability === 'leave'
+                        ? 'Doctor leave'
+                        : slot.availability.charAt(0).toUpperCase() + slot.availability.slice(1));
+                heading.appendChild(time);
+                heading.appendChild(availability);
+                card.appendChild(heading);
+
+                if (slot.appointments.length) {
+                    slot.appointments.forEach(function (appointment) {
+                        var booking = document.createElement('div');
+                        booking.className = 'daily-slot-booking';
+                        var patient = document.createElement('strong');
+                        patient.textContent = appointment.patient_name;
+                        var appointmentTime = document.createElement('span');
+                        appointmentTime.textContent = 'Appointment time: ' + appointment.time;
+                        var status = document.createElement('span');
+                        status.className = 'status status-' + appointment.status;
+                        status.textContent = appointment.status_label;
+                        booking.appendChild(patient);
+                        booking.appendChild(appointmentTime);
+                        booking.appendChild(status);
+                        card.appendChild(booking);
+                    });
+                } else if (slot.availability === 'available') {
+                    var empty = document.createElement('span');
+                    empty.className = 'muted-note';
+                    empty.textContent = 'No appointment booked';
+                    card.appendChild(empty);
+                }
+                grid.appendChild(card);
+            });
+        }
+
+        function loadSchedule() {
+            var currentRequest = ++requestNumber;
+            grid.replaceChildren();
+            message.textContent = '';
+            summary.textContent = 'Loading schedule…';
+            if (!dateInput.value) {
+                summary.textContent = 'Choose a date to view working hours and breaks.';
+                return;
+            }
+
+            fetch(endpoint + '?date=' + encodeURIComponent(dateInput.value), {
+                headers: {'Accept': 'application/json'}
+            }).then(function (response) {
+                return response.json().then(function (result) {
+                    if (!response.ok) throw new Error(result.error || 'Could not load schedule.');
+                    return result;
+                });
+            }).then(function (result) {
+                if (currentRequest !== requestNumber) return;
+                if (result.schedule) {
+                    var text = 'Working hours: ' + result.schedule.working_hours.start + '–'
+                        + result.schedule.working_hours.end + ' · Appointment duration: '
+                        + result.schedule.duration_minutes + ' minutes';
+                    if (result.schedule.break_times) {
+                        text += ' · Break: ' + result.schedule.break_times.start + '–'
+                            + result.schedule.break_times.end;
+                    }
+                    summary.textContent = text;
+                } else {
+                    summary.textContent = 'No working hours are registered for this day.';
+                }
+                renderSlots(result.slots);
+                message.textContent = result.message || (
+                    result.slots.length ? '' : 'No time slots are available for this date.'
+                );
+            }).catch(function (error) {
+                if (currentRequest !== requestNumber) return;
+                summary.textContent = 'Schedule could not be loaded.';
+                message.textContent = error.message || 'Could not retrieve schedule. Please try again.';
+            });
+        }
+
+        dateInput.addEventListener('change', loadSchedule);
+        loadSchedule();
+    }());
+    document.querySelectorAll('.remove-schedule-form').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            var appointmentCount = Number(form.elements.expected_appointment_count.value);
+            var patientCount = Number(form.elements.expected_patient_count.value);
+            var message = 'Remove this schedule day? ' + appointmentCount
+                + ' future appointment(s) for ' + patientCount + ' patient(s) were shown. '
+                + (appointmentCount
+                    ? 'Those appointments will be cancelled and the patients notified.'
+                    : 'No future appointments are currently affected.');
+            if (!window.confirm(message)) {
+                event.preventDefault();
+                return;
+            }
+            form.elements.confirmed.value = '1';
+        });
+    });
+</script>
+{% endblock %}

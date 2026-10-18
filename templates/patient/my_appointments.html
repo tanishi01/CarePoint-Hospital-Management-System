@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}My appointments{% endblock %}
+{% block content %}
+<section class="page-heading heading-with-action"><div><p class="eyebrow">PATIENT PORTAL</p><h1>My appointments</h1><p>Review scheduled and previous visits.</p></div><a class="button button-primary" href="{{ url_for('appointments.book_appointment') }}">Book appointment</a></section>
+<section class="card panel">
+    {% if appointments %}
+    <div class="table-wrap"><table><thead><tr><th>Date &amp; time</th><th>Doctor</th><th>Department</th><th>Room</th><th>Visit reason</th><th>Cancellation reason</th><th>Status</th></tr></thead><tbody>
+    {% for appointment in appointments %}
+        <tr><td>{{ appointment.appointment_date }}<small>{{ appointment.appointment_time }}</small></td><td>{{ appointment.doctor_name }}<small>{{ appointment.specialization }}</small></td><td>{{ appointment.department }}</td><td>{{ appointment.room_number or '—' }}</td><td>{{ appointment.reason }}</td><td>{% if appointment.status == 'cancelled' and appointment.cancellation_reason %}{{ appointment.cancellation_reason }}{% else %}—{% endif %}</td><td><span class="status status-{{ appointment.status }}">{{ appointment.status|replace('_', ' ')|title }}</span></td></tr>
+    {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">You have no appointment records yet.</div>{% endif %}
+</section>
+{% endblock %}

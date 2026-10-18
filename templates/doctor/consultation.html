@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Consultation{% endblock %}
+{% block content %}
+<section class="page-heading heading-with-action">
+    <div><p class="eyebrow">CLINICAL RECORD</p><h1>Patient consultation</h1><p>Complete the visit notes and add any prescription items.</p></div>
+    <a class="button button-quiet" href="{{ url_for('doctor.appointments') }}">Back to appointments</a>
+</section>
+<section class="card patient-banner">
+    <div class="patient-banner-main"><span class="doctor-avatar">{{ appointment.patient_name[:1]|upper }}</span><div><h2>{{ appointment.patient_name }}</h2><p>{{ appointment.age }} years · {{ appointment.gender }} · Blood group {{ appointment.blood_group }}</p><small>{{ appointment.phone }}</small></div></div>
+    <div class="patient-banner-meta"><span>Appointment</span><strong>{{ appointment.appointment_date }} · {{ appointment.appointment_time }}</strong><span>Reason</span><strong>{{ appointment.reason }}</strong></div>
+</section>
+<form method="post" action="{{ url_for('doctor.consultation', appointment_id=appointment.id) }}" class="card form-card consultation-form">
+    <div class="form-grid">
+        <div class="field field-span"><label for="diagnosis">Diagnosis</label><textarea id="diagnosis" name="diagnosis" rows="3" required>{{ existing_record.diagnosis if existing_record else '' }}</textarea></div>
+        <div class="field field-span"><label for="treatment_notes">Treatment notes</label><textarea id="treatment_notes" name="treatment_notes" rows="5" required>{{ existing_record.treatment_notes if existing_record else '' }}</textarea></div>
+    </div>
+    <div class="form-section">
+        <div class="panel-heading"><div><p class="eyebrow">OPTIONAL</p><h2>Prescription</h2><p>Add one or more medicines. Stock is updated when you save.</p></div><button class="button button-quiet" type="button" id="add-prescription-item">Add medicine</button></div>
+        {% if not medicines %}<div class="empty-state">No medicines are currently in stock. Save the consultation without a prescription or contact the administrator.</div>{% endif %}
+        <div id="prescription-items" class="prescription-items">
+            {% if existing_items %}
+                {% for item in existing_items %}
+                <div class="prescription-row">
+                    <div class="field"><label>Medicine</label><select name="medicine_id[]"><option value="">No medicine</option>{% if item.medicine_id not in (medicines|map(attribute='id')|list) %}<option value="{{ item.medicine_id }}" selected>Previously prescribed medicine #{{ item.medicine_id }} (not in stock)</option>{% endif %}{% for medicine in medicines %}<option value="{{ medicine.id }}" {% if item.medicine_id == medicine.id %}selected{% endif %}>{{ medicine.name }} ({{ medicine.stock_quantity }} in stock)</option>{% endfor %}</select></div>
+                    <div class="field"><label>Dosage</label><input name="dosage[]" value="{{ item.dosage }}" placeholder="e.g. 500 mg"></div>
+                    <div class="field"><label>Frequency</label><input name="frequency[]" value="{{ item.frequency }}" placeholder="e.g. 1-0-1"></div>
+                    <div class="field"><label>Duration</label><input name="duration[]" value="{{ item.duration }}" placeholder="e.g. 5 days"></div>
+                    <div class="field"><label>Quantity</label><input name="quantity[]" type="number" min="1" value="{{ item.quantity }}"></div>
+                    <button class="button button-danger remove-prescription" type="button" aria-label="Remove medicine">Remove</button>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="prescription-row">
+                    <div class="field"><label>Medicine</label><select name="medicine_id[]"><option value="">No medicine</option>{% for medicine in medicines %}<option value="{{ medicine.id }}">{{ medicine.name }} ({{ medicine.stock_quantity }} in stock)</option>{% endfor %}</select></div>
+                    <div class="field"><label>Dosage</label><input name="dosage[]" placeholder="e.g. 500 mg"></div>
+                    <div class="field"><label>Frequency</label><input name="frequency[]" placeholder="e.g. 1-0-1"></div>
+                    <div class="field"><label>Duration</label><input name="duration[]" placeholder="e.g. 5 days"></div>
+                    <div class="field"><label>Quantity</label><input name="quantity[]" type="number" min="1" value="1"></div>
+                    <button class="button button-danger remove-prescription" type="button" aria-label="Remove medicine">Remove</button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="form-actions"><button class="button button-primary" type="submit">Save consultation</button><a class="button button-quiet" href="{{ url_for('doctor.appointments') }}">Cancel</a></div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+    (function () {
+        var list = document.getElementById('prescription-items');
+        var add = document.getElementById('add-prescription-item');
+        function bindRemove(row) {
+            row.querySelector('.remove-prescription').addEventListener('click', function () { row.remove(); });
+        }
+        list.querySelectorAll('.prescription-row').forEach(bindRemove);
+        add.addEventListener('click', function () {
+            var template = list.querySelector('.prescription-row');
+            if (!template) return;
+            var row = template.cloneNode(true);
+            row.querySelectorAll('input').forEach(function (input) {
+                if (input.name === 'quantity[]') input.value = '1';
+                else input.value = '';
+            });
+            row.querySelector('select').selectedIndex = 0;
+            bindRemove(row);
+            list.appendChild(row);
+        });
+    }());
+</script>
+{% endblock %}

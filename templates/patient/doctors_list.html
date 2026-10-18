@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Doctor directory{% endblock %}
+{% block content %}
+<section class="page-heading heading-with-action">
+    <div><p class="eyebrow">CARE TEAM</p><h1>Find a doctor</h1><p>Browse active doctors and filter by department or specialty.</p></div>
+    <a class="button button-primary" href="{{ url_for('appointments.book_appointment') }}">Book an appointment</a>
+</section>
+<form method="get" action="{{ url_for('patient.view_doctors') }}" class="card filter-bar">
+    <div class="field"><label for="search">Search</label><input id="search" name="search" value="{{ search_query|default('') }}" placeholder="Name, specialty or department"></div>
+    <div class="field"><label for="department">Department</label><select id="department" name="department"><option value="">All departments</option>{% for item in departments|default([]) %}<option value="{{ item.department }}" {% if selected_department|default('') == item.department %}selected{% endif %}>{{ item.department }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="specialization">Specialization</label><select id="specialization" name="specialization"><option value="">All specialties</option>{% for item in specializations|default([]) %}<option value="{{ item.specialization }}" {% if selected_specialization|default('') == item.specialization %}selected{% endif %}>{{ item.specialization }}</option>{% endfor %}</select></div>
+    <button class="button button-primary" type="submit">Apply filters</button>
+</form>
+{% if doctors %}
+<section class="doctor-grid">
+    {% for doctor in doctors %}
+    <article class="card doctor-card">
+        <div class="doctor-avatar" aria-hidden="true">{{ doctor.full_name[:1]|upper }}</div>
+        <div class="doctor-card-content">
+            <p class="eyebrow">{{ doctor.department }}</p><h2>{{ doctor.full_name }}</h2>
+            <p>{{ doctor.specialization }}</p>
+            <small>{{ doctor.qualification }} · {{ doctor.room_number }}</small>
+            <div class="doctor-card-footer"><strong>₹{{ "%.2f"|format(doctor.consulting_fee|float) }} <small>consultation</small></strong><a class="button button-small" href="{{ url_for('appointments.book_appointment', doctor_id=doctor.id) }}">Book</a></div>
+        </div>
+    </article>
+    {% endfor %}
+</section>
+{% else %}
+<div class="empty-state">No doctors match those filters. Try changing your search.</div>
+{% endif %}
+{% endblock %}

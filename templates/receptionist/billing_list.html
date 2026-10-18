@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Billing desk{% endblock %}
+{% block content %}
+<section class="page-heading heading-with-action"><div><p class="eyebrow">FRONT DESK · BILLING</p><h1>Invoices and payments</h1><p>Review balances and record patient payments.</p></div><a class="button button-primary" href="{{ url_for('receptionist.create_bill') }}">Create invoice</a></section>
+{% if bills %}
+<div class="record-list">
+    {% for bill in bills %}
+    {% set balance = (bill.total_amount|float) - (bill.paid_amount|float) %}
+    <section class="card panel">
+        <div class="panel-heading"><div><p class="eyebrow">INVOICE #{{ bill.id }} · {{ bill.created_at }}</p><h2>{{ bill.patient_name }}</h2><p>{{ bill.phone }}</p></div><span class="status status-{{ bill.status }}">{{ bill.status|replace('_', ' ')|title }}</span></div>
+        <div class="bill-summary">
+            <div><span>Invoice total</span><strong>₹{{ "%.2f"|format(bill.total_amount|float) }}</strong></div>
+            <div><span>Amount paid</span><strong>₹{{ "%.2f"|format(bill.paid_amount|float) }}</strong></div>
+            <div><span>Remaining</span><strong>₹{{ "%.2f"|format(balance) }}</strong></div>
+        </div>
+        {% if bill.status != 'paid' and balance > 0 %}
+        <form method="post" action="{{ url_for('receptionist.record_payment') }}" class="payment-form">
+            <input type="hidden" name="bill_id" value="{{ bill.id }}">
+            <div class="field"><label for="amount-{{ bill.id }}">Payment amount (₹)</label><input id="amount-{{ bill.id }}" name="amount_paid" type="number" min="0.01" max="{{ '%.2f'|format(balance) }}" step="0.01" required></div>
+            <div class="field"><label for="method-{{ bill.id }}">Payment method</label><select id="method-{{ bill.id }}" name="payment_method" required><option value="cash">Cash</option><option value="card">Card</option><option value="upi">UPI</option></select></div>
+            <div class="field"><label for="notes-{{ bill.id }}">Notes</label><input id="notes-{{ bill.id }}" name="notes" maxlength="255"></div>
+            <button class="button button-primary" type="submit">Record payment</button>
+        </form>
+        {% else %}<p class="muted-note">This invoice is fully paid.</p>{% endif %}
+    </section>
+    {% endfor %}
+</div>
+{% else %}<div class="empty-state">No invoices have been created yet. <a href="{{ url_for('receptionist.create_bill') }}">Create the first invoice</a>.</div>{% endif %}
+{% endblock %}

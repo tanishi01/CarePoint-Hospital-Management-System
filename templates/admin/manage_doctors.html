@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Manage doctors{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">ADMINISTRATION</p><h1>Doctor management</h1><p>Create doctor accounts, update their details, and manage their status and schedules.</p></section>
+<details class="card disclosure-card">
+    <summary><span><strong>Add a doctor</strong><small>Create a doctor account and default weekday schedule.</small></span><span class="disclosure-plus" aria-hidden="true">+</span></summary>
+    <form method="post" action="{{ url_for('admin.manage_doctors') }}" class="form-card disclosure-content">
+        <div class="form-grid">
+            <div class="field"><label for="username">Username</label><input id="username" name="username" required></div>
+            <div class="field"><label for="password">Temporary password</label><input id="password" name="password" type="password" minlength="8" pattern="(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s]).{8,}" title="Use at least 8 characters with uppercase and lowercase letters, a number, and a special character." required></div>
+            <div class="field"><label for="full_name">Full name</label><input id="full_name" name="full_name" required></div>
+            <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" pattern="[A-Za-z0-9]+([._+-][A-Za-z0-9]+)*@(gmail\.com|yahoo\.com|yahoo\.co\.in|outlook\.com|nmims\.in)" title="Enter a username and use gmail.com, yahoo.com, yahoo.co.in, outlook.com, or nmims.in." required></div>
+            <div class="field"><label for="phone">Phone</label><input id="phone" name="phone" type="tel" pattern="\s*[6-9][0-9]{9}\s*" inputmode="numeric" title="Enter 10 digits beginning with 6, 7, 8, or 9. Surrounding spaces are ignored." required></div>
+            <div class="field"><label for="department">Department</label><input id="department" name="department" required></div>
+            <div class="field"><label for="specialization">Specialization</label><input id="specialization" name="specialization" required></div>
+            <div class="field"><label for="qualification">Qualification</label><input id="qualification" name="qualification" required></div>
+            <div class="field"><label for="room_number">Room number</label><input id="room_number" name="room_number" maxlength="20" pattern="(?:[A-Za-z]+[ -]?)?[0-9]+" title="Use a numeric room identifier, optionally prefixed as Room 101 or R-1." required></div>
+            <div class="field"><label for="consulting_fee">Consultation fee (₹)</label><input id="consulting_fee" name="consulting_fee" type="number" min="0" step="0.01" value="500"></div>
+        </div>
+        <div class="form-actions"><button class="button button-primary" type="submit">Create doctor</button></div>
+    </form>
+</details>
+<section class="doctor-admin-list">
+    {% if doctors %}
+    {% for doctor in doctors %}
+    <article class="card panel doctor-admin-card">
+        <div class="panel-heading"><div><p class="eyebrow">{{ doctor.department }} · {{ doctor.specialization }}</p><h2>{{ doctor.full_name }}</h2><p>{{ doctor.email }} · {{ doctor.phone }}</p></div><span class="status status-{{ doctor.status }}">{{ doctor.status|title }}</span></div>
+        <div class="doctor-admin-meta"><span>{{ doctor.qualification }}</span><span>{{ doctor.room_number }}</span><span>₹{{ "%.2f"|format(doctor.consulting_fee|float) }} consultation</span><span>Username: {{ doctor.username }}</span></div>
+        <details class="inline-disclosure"><summary>Edit doctor details</summary>
+            <form method="post" action="{{ url_for('admin.update_doctor', doctor_id=doctor.id) }}" class="form-grid compact-form">
+                <div class="field"><label for="edit-name-{{ doctor.id }}">Full name</label><input id="edit-name-{{ doctor.id }}" name="full_name" value="{{ doctor.full_name }}" required></div>
+                <div class="field"><label for="edit-email-{{ doctor.id }}">Email</label><input id="edit-email-{{ doctor.id }}" name="email" type="email" pattern="[A-Za-z0-9]+([._+-][A-Za-z0-9]+)*@(gmail\.com|yahoo\.com|yahoo\.co\.in|outlook\.com|nmims\.in)" title="Enter a username and use gmail.com, yahoo.com, yahoo.co.in, outlook.com, or nmims.in." value="{{ doctor.email }}" required></div>
+                <div class="field"><label for="edit-phone-{{ doctor.id }}">Phone</label><input id="edit-phone-{{ doctor.id }}" name="phone" type="tel" pattern="\s*[6-9][0-9]{9}\s*" inputmode="numeric" title="Enter 10 digits beginning with 6, 7, 8, or 9. Surrounding spaces are ignored." value="{{ doctor.phone }}" required></div>
+                <div class="field"><label for="edit-department-{{ doctor.id }}">Department</label><input id="edit-department-{{ doctor.id }}" name="department" value="{{ doctor.department }}" required></div>
+                <div class="field"><label for="edit-specialization-{{ doctor.id }}">Specialization</label><input id="edit-specialization-{{ doctor.id }}" name="specialization" value="{{ doctor.specialization }}" required></div>
+                <div class="field"><label for="edit-qualification-{{ doctor.id }}">Qualification</label><input id="edit-qualification-{{ doctor.id }}" name="qualification" value="{{ doctor.qualification }}" required></div>
+                <div class="field"><label for="edit-room-{{ doctor.id }}">Room number</label><input id="edit-room-{{ doctor.id }}" name="room_number" maxlength="20" pattern="(?:[A-Za-z]+[ -]?)?[0-9]+" title="Use a numeric room identifier, optionally prefixed as Room 101 or R-1." value="{{ doctor.room_number }}" required></div>
+                <div class="field"><label for="edit-fee-{{ doctor.id }}">Consultation fee (₹)</label><input id="edit-fee-{{ doctor.id }}" name="consulting_fee" type="number" min="0" step="0.01" value="{{ doctor.consulting_fee }}" required></div>
+                <div class="field-span form-actions"><button class="button button-primary" type="submit">Save changes</button></div>
+            </form>
+        </details>
+        <div class="form-actions">
+            <a class="button button-quiet" href="{{ url_for('admin.doctor_schedules', doctor_id=doctor.id) }}">Manage schedule</a>
+            <form method="post" action="{{ url_for('admin.toggle_doctor_status', doctor_id=doctor.id) }}" onsubmit="return window.confirm('Change this doctor account status?');"><input type="hidden" name="confirmed" value="1"><button class="button {% if doctor.status == 'active' %}button-danger{% else %}button-primary{% endif %}" type="submit">{% if doctor.status == 'active' %}Deactivate doctor{% else %}Activate doctor{% endif %}</button></form>
+            {% if doctor.can_delete %}<form method="post" action="{{ url_for('admin.delete_doctor', doctor_id=doctor.id) }}" onsubmit="return window.confirm('Permanently delete this doctor account? Deletion is allowed only when no linked records exist.');"><input type="hidden" name="confirmed" value="1"><button class="button button-danger" type="submit">Delete doctor</button></form>{% endif %}
+        </div>
+    </article>
+    {% endfor %}
+    {% else %}<div class="empty-state">No doctor accounts have been created.</div>{% endif %}
+</section>
+{% endblock %}

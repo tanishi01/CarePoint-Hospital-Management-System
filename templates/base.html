@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0d6b68">
+    <title>{% block title %}CarePoint Hospital{% endblock %} | CarePoint</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="{{ url_for('index') }}" aria-label="CarePoint home">
+            <span class="brand-mark" aria-hidden="true">+</span>
+            <span><strong>CarePoint</strong><small>Hospital Management</small></span>
+        </a>
+        {% if session.get('user_id') %}
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="main-nav">Menu</button>
+        <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+            {% set role = session.get('role') %}
+            {% if role == 'admin' %}
+                <a href="{{ url_for('admin.dashboard') }}">Overview</a>
+                <a href="{{ url_for('admin.manage_doctors') }}">Doctors</a>
+                <a href="{{ url_for('admin.manage_staff') }}">Staff</a>
+                <a href="{{ url_for('pharmacy.inventory') }}">Pharmacy</a>
+                <a href="{{ url_for('admin.reports') }}">Reports</a>
+            {% elif role == 'doctor' %}
+                <a href="{{ url_for('doctor.dashboard') }}">Overview</a>
+                <a href="{{ url_for('doctor.appointments') }}">Appointments</a>
+                <a href="{{ url_for('doctor.leave_requests') }}">Emergency leave</a>
+                <a href="{{ url_for('pharmacy.inventory') }}">Medicine stock</a>
+            {% elif role == 'patient' %}
+                <a href="{{ url_for('patient.dashboard') }}">Overview</a>
+                <a href="{{ url_for('patient.view_doctors') }}">Doctors</a>
+                <a href="{{ url_for('patient.my_appointments') }}">Appointments</a>
+                <a href="{{ url_for('patient.my_records') }}">Records</a>
+                <a href="{{ url_for('patient.my_bills') }}">Bills</a>
+            {% elif role == 'receptionist' %}
+                <a href="{{ url_for('receptionist.dashboard') }}">Overview</a>
+                <a href="{{ url_for('receptionist.manage_appointments') }}">Appointments</a>
+                <a href="{{ url_for('appointments.book_appointment') }}">Book appointment</a>
+                <a href="{{ url_for('receptionist.manage_billing') }}">Billing</a>
+                <a href="{{ url_for('beds.bed_availability') }}">Beds</a>
+                <a href="{{ url_for('pharmacy.inventory') }}">Pharmacy</a>
+            {% endif %}
+            <a href="{{ url_for('auth.profile') }}">My profile</a>
+            <a class="nav-signout" href="{{ url_for('auth.logout') }}">Sign out</a>
+        </nav>
+        {% else %}
+        <nav class="main-nav public-nav" aria-label="Main navigation">
+            <a href="{{ url_for('auth.login') }}">Sign in</a>
+            <a class="button button-small" href="{{ url_for('auth.register') }}">Patient registration</a>
+        </nav>
+        {% endif %}
+    </header>
+
+    <main class="page-shell">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <section class="flash-stack" aria-label="Notifications" aria-live="polite">
+                {% for category, message in messages %}
+                <div class="flash flash-{{ category|e }}">
+                    <span>{{ message }}</span>
+                    <button type="button" class="flash-close" aria-label="Dismiss notification">&times;</button>
+                </div>
+                {% endfor %}
+            </section>
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <span>CarePoint Hospital Management</span>
+        <span>Care coordination, made clearer.</span>
+    </footer>
+    <script>
+        document.querySelectorAll('.flash-close').forEach(function (button) {
+            button.addEventListener('click', function () {
+                button.closest('.flash').remove();
+            });
+        });
+        var navToggle = document.querySelector('.nav-toggle');
+        if (navToggle) {
+            navToggle.addEventListener('click', function () {
+                var nav = document.getElementById('main-nav');
+                var expanded = navToggle.getAttribute('aria-expanded') === 'true';
+                navToggle.setAttribute('aria-expanded', String(!expanded));
+                nav.classList.toggle('nav-open', !expanded);
+            });
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Pharmacy inventory{% endblock %}
+{% block content %}
+<section class="page-heading heading-with-action"><div><p class="eyebrow">PHARMACY</p><h1>Medicine inventory</h1><p>Review stock and replenishment thresholds.</p></div>{% if session.get('role') == 'admin' %}<a class="button button-quiet" href="{{ url_for('pharmacy.low_stock_alerts') }}">Low-stock alerts</a>{% endif %}</section>
+{% if session.get('role') == 'admin' %}
+<form method="post" action="{{ url_for('pharmacy.inventory') }}" class="card form-card">
+    <h2 class="form-title">Add medicine</h2>
+    <div class="form-grid">
+        <div class="field"><label for="name">Medicine name</label><input id="name" name="name" required></div>
+        <div class="field"><label for="generic_name">Generic name</label><input id="generic_name" name="generic_name" required></div>
+        <div class="field"><label for="unit_price">Unit price (₹)</label><input id="unit_price" name="unit_price" type="number" min="0" step="0.01" required></div>
+        <div class="field"><label for="stock_quantity">Starting stock</label><input id="stock_quantity" name="stock_quantity" type="number" min="0" value="0" required></div>
+        <div class="field"><label for="min_stock_threshold">Minimum stock threshold</label><input id="min_stock_threshold" name="min_stock_threshold" type="number" min="0" value="20" required></div>
+    </div>
+    <div class="form-actions"><button class="button button-primary" type="submit">Add to inventory</button></div>
+</form>
+{% endif %}
+<section class="card panel">
+    <div class="panel-heading"><div><p class="eyebrow">STOCK REGISTER</p><h2>Medicines</h2></div></div>
+    {% if medicines %}
+    <div class="table-wrap"><table><thead><tr><th>Medicine</th><th>Generic name</th><th>Unit price</th><th>In stock</th><th>Threshold</th>{% if session.get('role') == 'admin' %}<th>Actions</th>{% endif %}</tr></thead><tbody>
+    {% for medicine in medicines %}
+        <tr><td><strong>{{ medicine.name }}</strong></td><td>{{ medicine.generic_name }}</td><td>₹{{ "%.2f"|format(medicine.unit_price|float) }}</td><td><span class="{% if medicine.stock_quantity <= medicine.min_stock_threshold %}stock-low{% else %}stock-ok{% endif %}">{{ medicine.stock_quantity }}</span></td><td>{{ medicine.min_stock_threshold }}</td>
+        {% if session.get('role') == 'admin' %}<td><div class="form-actions"><a class="button button-small button-quiet" href="{{ url_for('pharmacy.edit_medicine', medicine_id=medicine.id) }}">Edit medicine</a><form method="post" action="{{ url_for('pharmacy.update_stock', medicine_id=medicine.id) }}" class="stock-form"><label class="visually-hidden" for="add-quantity-{{ medicine.id }}">Quantity to add</label><input id="add-quantity-{{ medicine.id }}" name="add_quantity" type="number" min="1" placeholder="Units" required><button class="button button-small" type="submit">Add stock</button></form></div></td>{% endif %}</tr>
+    {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">No medicines have been added to the inventory.</div>{% endif %}
+</section>
+{% endblock %}

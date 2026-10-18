@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Edit medicine{% endblock %}
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">PHARMACY · INVENTORY CONTROL</p>
+    <h1>Edit medicine</h1>
+    <p>Update medicine details and replenishment threshold. Current stock is not changed here.</p>
+</section>
+<form method="post" action="{{ url_for('pharmacy.edit_medicine', medicine_id=medicine.id) }}" class="card form-card">
+    <div class="form-grid">
+        <div class="field"><label for="name">Medicine name</label><input id="name" name="name" maxlength="100" value="{{ medicine.name }}" required></div>
+        <div class="field"><label for="generic_name">Generic name</label><input id="generic_name" name="generic_name" maxlength="100" value="{{ medicine.generic_name }}" required></div>
+        <div class="field"><label for="unit_price">Unit price (₹)</label><input id="unit_price" name="unit_price" type="number" min="0" max="99999999.99" step="0.01" value="{{ medicine.unit_price }}" required></div>
+        <div class="field"><label for="min_stock_threshold">Minimum stock threshold</label><input id="min_stock_threshold" name="min_stock_threshold" type="number" min="0" max="2147483647" value="{{ medicine.min_stock_threshold }}" required></div>
+    </div>
+    <p class="muted-note">Current stock: {{ medicine.stock_quantity }} units. Use Add stock from the inventory list to replenish.</p>
+    <div class="form-actions"><button class="button button-primary" type="submit">Save medicine</button><a class="button button-quiet" href="{{ url_for('pharmacy.inventory') }}">Cancel</a></div>
+</form>
+{% endblock %}

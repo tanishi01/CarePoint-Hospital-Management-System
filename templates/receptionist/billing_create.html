@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Create invoice{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">FRONT DESK · BILLING</p><h1>Create an invoice</h1><p>Select the patient and enter the charges. The total is calculated by the server.</p></section>
+<form method="post" action="{{ url_for('receptionist.create_bill') }}" class="card form-card">
+    <div class="form-grid">
+        <div class="field field-span"><label for="patient_id">Patient</label><select id="patient_id" name="patient_id" required><option value="">Choose a patient</option>{% for patient in patients %}<option value="{{ patient.id }}">{{ patient.full_name }} · {{ patient.phone }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="appointment_id">Completed appointment (optional)</label><select id="appointment_id" name="appointment_id"><option value="" data-patient="">Not linked</option>{% for appointment in appointments %}<option value="{{ appointment.id }}" data-patient="{{ appointment.patient_id }}" data-fee="{{ appointment.consulting_fee }}">{{ appointment.appointment_date }} · {{ appointment.doctor_name }} · Patient #{{ appointment.patient_id }} · ₹{{ "%.2f"|format(appointment.consulting_fee|float) }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="bed_allocation_id">Bed allocation (optional)</label><select id="bed_allocation_id" name="bed_allocation_id"><option value="" data-patient="">Not linked</option>{% for allocation in bed_allocations %}<option value="{{ allocation.id }}" data-patient="{{ allocation.patient_id }}" data-charge="{{ allocation.daily_charge }}">{{ allocation.ward_name }} · Bed {{ allocation.bed_number }} · Patient #{{ allocation.patient_id }} · ₹{{ "%.2f"|format(allocation.daily_charge|float) }}/day ({{ allocation.status }})</option>{% endfor %}</select></div>
+        <div class="field"><label for="consultation_fee">Consultation fee (₹)</label><input id="consultation_fee" name="consultation_fee" type="number" min="0" step="0.01" value="0.00"></div>
+        <div class="field"><label for="test_charges">Test charges (₹)</label><input id="test_charges" name="test_charges" type="number" min="0" step="0.01" value="0.00"></div>
+        <div class="field"><label for="bed_charges">Bed charges (₹)</label><input id="bed_charges" name="bed_charges" type="number" min="0" step="0.01" value="0.00"></div>
+        <div class="field"><label for="medicine_charges">Medicine charges (₹)</label><input id="medicine_charges" name="medicine_charges" type="number" min="0" step="0.01" value="0.00"></div>
+    </div>
+    <p class="muted-note">Linking an appointment or allocation selects its associated patient. Charges can be reviewed before submitting.</p>
+    <div class="form-actions"><button class="button button-primary" type="submit">Create invoice</button><a class="button button-quiet" href="{{ url_for('receptionist.manage_billing') }}">Cancel</a></div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+    (function () {
+        var patient = document.getElementById('patient_id');
+        var appointment = document.getElementById('appointment_id');
+        var allocation = document.getElementById('bed_allocation_id');
+        function selectPatient(option) {
+            if (option && option.dataset.patient) patient.value = option.dataset.patient;
+        }
+        appointment.addEventListener('change', function () {
+            var option = appointment.options[appointment.selectedIndex];
+            selectPatient(option);
+            if (option.dataset.fee) document.getElementById('consultation_fee').value = option.dataset.fee;
+        });
+        allocation.addEventListener('change', function () {
+            var option = allocation.options[allocation.selectedIndex];
+            selectPatient(option);
+            if (option.dataset.charge) document.getElementById('bed_charges').value = option.dataset.charge;
+        });
+    }());
+</script>
+{% endblock %}

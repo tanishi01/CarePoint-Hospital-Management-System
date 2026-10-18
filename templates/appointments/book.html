@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Book an appointment{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">APPOINTMENTS</p><h1>Book an appointment</h1><p>Choose a doctor and date to see their registered working hours and available appointment slots.</p></section>
+<form id="booking-form" method="post" action="{{ url_for('appointments.book_appointment') }}" class="card form-card">
+    <div class="form-grid">
+        {% if session.get('role') == 'receptionist' %}
+        <div class="field field-span"><label for="patient_id">Patient</label><select id="patient_id" name="patient_id" required><option value="">Choose a patient</option>{% for patient in patients %}<option value="{{ patient.id }}">{{ patient.full_name }} · {{ patient.phone }}</option>{% endfor %}</select>{% if not patients %}<small>No active patient accounts were returned.</small>{% endif %}</div>
+        {% endif %}
+        <div class="field field-span"><label for="doctor_id">Doctor</label><select id="doctor_id" name="doctor_id" required><option value="">Choose a doctor</option>{% for doctor in doctors %}<option value="{{ doctor.id }}" {% if selected_doctor_id == doctor.id %}selected{% endif %}>{{ doctor.full_name }} · {{ doctor.department }} — {{ doctor.specialization }} (₹{{ "%.2f"|format(doctor.consulting_fee|float) }})</option>{% endfor %}</select>{% if not doctors %}<small>No active doctors are available.</small>{% endif %}</div>
+        <div class="field"><label for="appointment_date">Date</label><input id="appointment_date" name="appointment_date" type="date" min="{{ today }}" value="{{ selected_date }}" required></div>
+        <div class="field field-span">
+            <span class="schedule-label">Doctor's schedule</span>
+            <p id="schedule-summary" class="schedule-summary" aria-live="polite">Choose a doctor and date to load working hours.</p>
+            <p id="slot-help" class="slot-message" role="status" aria-live="polite">Choose a doctor and date to see available times.</p>
+            <fieldset class="slot-picker" id="slot-picker" disabled>
+                <legend class="visually-hidden">Available appointment times</legend>
+                <div class="slot-legend" aria-label="Time slot legend">
+                    <span><i class="slot-key slot-key-available"></i>Available</span>
+                    <span><i class="slot-key slot-key-unavailable"></i>Booked / break</span>
+                    <span><i class="slot-key slot-key-outside"></i>Outside working hours</span>
+                </div>
+                <div id="slot-grid" class="slot-grid" aria-label="Appointment time slots"></div>
+            </fieldset>
+            <input id="appointment_time" name="appointment_time" type="hidden">
+            <p id="selection-summary" class="selection-summary" aria-live="polite">No time selected.</p>
+        </div>
+        <div class="field field-span"><label for="reason">Reason for visit</label><textarea id="reason" name="reason" rows="4" required></textarea></div>
+    </div>
+    <div class="form-actions"><button class="button button-primary" type="submit">Request appointment</button><a class="button button-quiet" href="{{ url_for('index') }}">Cancel</a></div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+    (function () {
+        var doctor = document.getElementById('doctor_id');
+        var date = document.getElementById('appointment_date');
+        var time = document.getElementById('appointment_time');
+        var help = document.getElementById('slot-help');
+        var grid = document.getElementById('slot-grid');
+        var picker = document.getElementById('slot-picker');
+        var scheduleSummary = document.getElementById('schedule-summary');
+        var selectionSummary = document.getElementById('selection-summary');
+        var form = document.getElementById('booking-form');
+        var requestNumber = 0;
+        var slotLabels = {
+            available: 'Available',
+            unavailable: 'Booked or unavailable',
+            break: 'Doctor break',
+            outside: 'Outside working hours',
+            leave: 'Doctor leave'
+        };
+        function clearSelection() {
+            time.value = '';
+            selectionSummary.textContent = 'No time selected.';
+        }
+        function renderSlots(slots) {
+            grid.replaceChildren();
+            (slots || []).forEach(function (slot) {
+                var button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'time-slot time-slot-' + slot.status;
+                button.textContent = slot.time;
+                button.disabled = slot.status !== 'available';
+                button.setAttribute('aria-label', slot.time + ', ' + (slotLabels[slot.status] || 'Unavailable'));
+                button.addEventListener('click', function () {
+                    grid.querySelectorAll('.time-slot-selected').forEach(function (selected) {
+                        selected.classList.remove('time-slot-selected');
+                        selected.setAttribute('aria-pressed', 'false');
+                    });
+                    button.classList.add('time-slot-selected');
+                    button.setAttribute('aria-pressed', 'true');
+                    time.value = slot.time;
+                    var dateText = new Date(date.value + 'T00:00:00').toLocaleDateString(undefined, {
+                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                    });
+                    selectionSummary.textContent = 'Selected: ' + dateText + ' at ' + slot.time;
+                });
+                button.setAttribute('aria-pressed', 'false');
+                grid.appendChild(button);
+            });
+        }
+        function loadSlots() {
+            var currentRequest = ++requestNumber;
+            picker.disabled = true;
+            grid.replaceChildren();
+            clearSelection();
+            scheduleSummary.textContent = 'Loading doctor schedule…';
+            if (!doctor.value || !date.value) {
+                scheduleSummary.textContent = 'Choose a doctor and date to load working hours.';
+                help.textContent = 'Choose a doctor and date to see available times.';
+                return;
+            }
+            help.textContent = 'Loading time slots…';
+            var params = new URLSearchParams({doctor_id: doctor.value, date: date.value});
+            fetch('{{ url_for("appointments.available_slots") }}?' + params.toString(), {
+                headers: {'Accept': 'application/json'}
+            }).then(function (response) {
+                return response.json().then(function (result) {
+                    if (!response.ok) throw new Error(result.error || 'Could not load available times.');
+                    return result;
+                });
+            }).then(function (result) {
+                if (currentRequest !== requestNumber) return;
+                picker.disabled = false;
+                renderSlots(result.slots);
+                if (result.schedule) {
+                    var scheduleText = 'Working hours: ' + result.schedule.working_hours.start + '–' + result.schedule.working_hours.end
+                        + ' · Appointment duration: ' + result.schedule.duration_minutes + ' minutes';
+                    if (result.schedule.break_times) {
+                        scheduleText += ' · Break: ' + result.schedule.break_times.start + '–' + result.schedule.break_times.end;
+                    }
+                    scheduleSummary.textContent = scheduleText;
+                } else {
+                    scheduleSummary.textContent = 'No working hours are registered for this day.';
+                }
+                help.textContent = result.error || result.message || 'Select an available time to continue.';
+            }).catch(function (error) {
+                if (currentRequest !== requestNumber) return;
+                picker.disabled = true;
+                scheduleSummary.textContent = 'Schedule could not be loaded.';
+                help.textContent = error.message || 'Could not retrieve availability. Please try again.';
+            });
+        }
+        doctor.addEventListener('change', loadSlots);
+        date.addEventListener('change', loadSlots);
+        if (doctor.value && date.value) loadSlots();
+        form.addEventListener('submit', function (event) {
+            if (!time.value) {
+                event.preventDefault();
+                help.textContent = 'Select an available time before submitting your request.';
+            }
+        });
+    }());
+</script>
+{% endblock %}

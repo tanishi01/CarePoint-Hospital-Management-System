@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Bed availability{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">HOSPITAL OPERATIONS</p><h1>Bed availability</h1><p>Review wards, allocate available beds, and discharge admitted patients.</p></section>
+{% if allocation_conflicts and (allocation_conflicts.patient or allocation_conflicts.bed) %}
+<section class="card alert-card alert-danger" role="alert">
+    <strong>Existing allocation conflicts need review.</strong>
+    {% if allocation_conflicts.patient %}<p>{{ allocation_conflicts.patient }} patient(s) have multiple active bed allocations.</p>{% endif %}
+    {% if allocation_conflicts.bed %}<p>{{ allocation_conflicts.bed }} bed(s) have multiple active allocation records.</p>{% endif %}
+    <p>No existing allocation history has been changed.</p>
+</section>
+{% endif %}
+<form method="post" action="{{ url_for('beds.allocate_bed') }}" class="card form-card">
+    <h2 class="form-title">Allocate a bed</h2>
+    {% if available_beds and patients %}
+    <div class="form-grid">
+        <div class="field"><label for="bed_id">Available bed</label><select id="bed_id" name="bed_id" required><option value="">Choose a bed</option>{% for bed in available_beds %}<option value="{{ bed.id }}">{{ bed.ward_name }} ({{ bed.ward_type }}) · {{ bed.bed_number }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="patient_id">Patient</label><select id="patient_id" name="patient_id" required><option value="">Choose a patient</option>{% for patient in patients %}<option value="{{ patient.id }}">{{ patient.full_name }} · {{ patient.phone }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="daily_charge">Daily charge (₹)</label><input id="daily_charge" name="daily_charge" type="number" min="0.01" step="0.01" value="1000" required></div>
+    </div>
+    <div class="form-actions"><button class="button button-primary" type="submit">Allocate bed</button></div>
+    {% elif not available_beds %}<div class="empty-state">There are no beds currently available for allocation.</div>
+    {% else %}<div class="empty-state">There are no active patients available to assign.</div>{% endif %}
+</form>
+<section class="card panel">
+    <div class="panel-heading"><div><p class="eyebrow">LIVE CAPACITY</p><h2>Ward and bed map</h2></div></div>
+    {% if wards_beds %}
+    <div class="table-wrap"><table><thead><tr><th>Ward</th><th>Type</th><th>Bed</th><th>Status</th><th>Patient</th><th>Admission</th><th>Daily charge</th><th>Action</th></tr></thead><tbody>
+    {% for row in wards_beds %}
+        <tr><td>{{ row.ward_name }}</td><td>{{ row.ward_type }}</td><td>{{ row.bed_number or '—' }}</td><td>{% if row.bed_status %}<span class="status status-{{ row.bed_status }}">{{ row.bed_status|replace('_', ' ')|title }}</span>{% else %}<span class="muted-note">No beds configured</span>{% endif %}</td><td>{{ row.patient_name or '—' }}</td><td>{{ row.admission_date or '—' }}</td><td>{% if row.daily_charge %}₹{{ "%.2f"|format(row.daily_charge|float) }}{% else %}—{% endif %}</td><td>{% if row.allocation_id %}<form method="post" action="{{ url_for('beds.discharge_patient', allocation_id=row.allocation_id) }}" onsubmit="return window.confirm('Discharge this patient and free the bed?');"><button class="button button-danger button-small" type="submit">Discharge</button></form>{% else %}—{% endif %}</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">No wards or beds are configured.</div>{% endif %}
+</section>
+{% endblock %}

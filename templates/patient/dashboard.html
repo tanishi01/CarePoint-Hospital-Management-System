@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Patient overview{% endblock %}
+{% block content %}
+<section class="page-heading heading-with-action">
+    <div><p class="eyebrow">PATIENT PORTAL</p><h1>Your care overview</h1><p>Appointments, updates, and billing in one place.</p></div>
+    <a class="button button-primary" href="{{ url_for('appointments.book_appointment') }}">Book an appointment</a>
+</section>
+<div class="dashboard-columns">
+    <section class="card panel">
+        <div class="panel-heading"><div><p class="eyebrow">UP NEXT</p><h2>Upcoming appointments</h2></div><a href="{{ url_for('patient.my_appointments') }}">View all</a></div>
+        {% if upcoming_appointments %}
+        <div class="stack-list">
+            {% for appointment in upcoming_appointments %}
+            <article class="list-item">
+                <div class="date-tile"><strong>{{ appointment.appointment_date.strftime('%d') if appointment.appointment_date.strftime is defined else appointment.appointment_date }}</strong><span>{{ appointment.appointment_date.strftime('%b') if appointment.appointment_date.strftime is defined else '' }}</span></div>
+                <div class="list-main"><strong>{{ appointment.doctor_name }}</strong><span>{{ appointment.department }} · {{ appointment.specialization }}</span><small>{{ appointment.appointment_time }}{% if appointment.room_number %} · {{ appointment.room_number }}{% endif %}</small></div>
+                <span class="status status-{{ appointment.status }}">{{ appointment.status|replace('_', ' ')|title }}</span>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}<div class="empty-state">No upcoming appointments. <a href="{{ url_for('appointments.book_appointment') }}">Find a time</a>.</div>{% endif %}
+    </section>
+    <section class="card panel">
+        <div class="panel-heading"><div><p class="eyebrow">RECENT UPDATES</p><h2>Notifications</h2></div></div>
+        {% if notifications %}
+        <div class="stack-list">
+            {% for notification in notifications %}
+            <article class="notification-item"><span class="notification-dot"></span><div><p>{{ notification.message }}</p><small>{{ notification.created_at }}</small></div></article>
+            {% endfor %}
+        </div>
+        {% else %}<div class="empty-state">You have no new notifications.</div>{% endif %}
+    </section>
+</div>
+<section class="card panel">
+    <div class="panel-heading"><div><p class="eyebrow">ACCOUNT</p><h2>Outstanding bills</h2></div><a href="{{ url_for('patient.my_bills') }}">Billing history</a></div>
+    {% if pending_bills %}
+    <div class="table-wrap"><table><thead><tr><th>Bill</th><th>Created</th><th>Total</th><th>Paid</th><th>Status</th></tr></thead><tbody>
+    {% for bill in pending_bills %}
+        <tr><td>#{{ bill.id }}</td><td>{{ bill.created_at }}</td><td>₹{{ "%.2f"|format(bill.total_amount|float) }}</td><td>₹{{ "%.2f"|format(bill.paid_amount|float) }}</td><td><span class="status status-{{ bill.status }}">{{ bill.status|replace('_', ' ')|title }}</span></td></tr>
+    {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">No outstanding bills.</div>{% endif %}
+</section>
+<section class="quick-links">
+    <a class="quick-link" href="{{ url_for('patient.view_doctors') }}"><strong>Find a doctor</strong><span>Browse specialties and departments</span></a>
+    <a class="quick-link" href="{{ url_for('patient.my_records') }}"><strong>Medical records</strong><span>Consultation notes and prescriptions</span></a>
+</section>
+{% endblock %}

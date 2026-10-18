@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Wards and beds{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">ADMINISTRATION</p><h1>Wards and beds</h1><p>Create wards and their initial beds. Receptionists manage bed availability, admissions, and discharges.</p></section>
+<form method="post" action="{{ url_for('admin.manage_wards') }}" class="card form-card">
+    <h2 class="form-title">Create ward</h2>
+    <div class="form-grid">
+        <div class="field"><label for="ward_name">Ward name</label><input id="ward_name" name="ward_name" maxlength="50" required></div>
+        <div class="field"><label for="ward_type">Ward type</label><select id="ward_type" name="ward_type" required><option value="">Choose type</option><option>General</option><option>ICU</option><option>Pediatric</option><option>VIP</option></select></div>
+        <div class="field"><label for="total_beds">Number of beds</label><input id="total_beds" name="total_beds" type="number" min="1" required></div>
+    </div>
+    <p class="muted-note">Beds are generated automatically when the ward is created.</p>
+    <div class="form-actions"><button class="button button-primary" type="submit">Create ward and beds</button></div>
+</form>
+<section class="card panel">
+    <div class="panel-heading"><div><p class="eyebrow">CAPACITY</p><h2>Configured wards</h2></div></div>
+    {% if wards %}
+    <div class="table-wrap"><table><thead><tr><th>Ward</th><th>Type</th><th>Configured</th><th>Available</th><th>Occupied</th></tr></thead><tbody>
+    {% for ward in wards %}
+        <tr><td>{{ ward.ward_name }}</td><td>{{ ward.ward_type }}</td><td>{{ ward.generated_beds|default(0) }} / {{ ward.total_beds }}</td><td>{{ ward.available_beds|default(0) }}</td><td>{{ ward.occupied_beds|default(0) }}</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">No wards have been configured.</div>{% endif %}
+</section>
+{% endblock %}

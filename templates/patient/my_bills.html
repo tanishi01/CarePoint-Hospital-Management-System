@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}My bills{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">PATIENT PORTAL</p><h1>Billing history</h1><p>Review invoices and payments recorded by the hospital.</p></section>
+{% if bills %}
+<div class="record-list">
+    {% for bill in bills %}
+    <section class="card panel">
+        <div class="panel-heading"><div><p class="eyebrow">INVOICE #{{ bill.id }} · {{ bill.created_at }}</p><h2>₹{{ "%.2f"|format(bill.total_amount|float) }}</h2></div><span class="status status-{{ bill.status }}">{{ bill.status|replace('_', ' ')|title }}</span></div>
+        <div class="bill-summary">
+            <div><span>Consultation</span><strong>₹{{ "%.2f"|format(bill.consultation_fee|float) }}</strong></div>
+            <div><span>Tests</span><strong>₹{{ "%.2f"|format(bill.test_charges|float) }}</strong></div>
+            <div><span>Bed</span><strong>₹{{ "%.2f"|format(bill.bed_charges|float) }}</strong></div>
+            <div><span>Medicines</span><strong>₹{{ "%.2f"|format(bill.medicine_charges|float) }}</strong></div>
+            <div><span>Paid</span><strong>₹{{ "%.2f"|format(bill.paid_amount|float) }}</strong></div>
+            <div><span>Balance</span><strong>₹{{ "%.2f"|format((bill.total_amount|float) - (bill.paid_amount|float)) }}</strong></div>
+        </div>
+        {% if bill.payments %}
+        <h3 class="subheading">Recorded payments</h3>
+        <div class="table-wrap"><table><thead><tr><th>Date</th><th>Method</th><th>Amount</th><th>Notes</th></tr></thead><tbody>
+        {% for payment in bill.payments %}
+            <tr><td>{{ payment.payment_date }}</td><td>{{ payment.payment_method|upper }}</td><td>₹{{ "%.2f"|format(payment.amount_paid|float) }}</td><td>{{ payment.notes or '—' }}</td></tr>
+        {% endfor %}
+        </tbody></table></div>
+        {% else %}<p class="muted-note">No payments have been recorded for this invoice yet.</p>{% endif %}
+    </section>
+    {% endfor %}
+</div>
+{% else %}<div class="empty-state">No billing records are available.</div>{% endif %}
+{% endblock %}

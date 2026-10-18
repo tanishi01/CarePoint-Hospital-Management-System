@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}My profile{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">ACCOUNT SETTINGS</p><h1>My profile</h1><p>Update the contact details associated with your account.</p></section>
+<form method="post" action="{{ url_for('auth.profile') }}" class="card form-card">
+    <div class="form-grid">
+        <div class="field"><label for="full_name">Full name</label><input id="full_name" name="full_name" value="{{ user.full_name }}" autocomplete="name" required></div>
+        <div class="field"><label for="email">Email address</label><input id="email" name="email" type="email" pattern="[A-Za-z0-9]+([._+-][A-Za-z0-9]+)*@(gmail\.com|yahoo\.com|yahoo\.co\.in|outlook\.com|nmims\.in)" title="Enter a username and use gmail.com, yahoo.com, yahoo.co.in, outlook.com, or nmims.in." value="{{ user.email }}" autocomplete="email" required></div>
+        <div class="field"><label for="phone">Phone number</label><input id="phone" name="phone" type="tel" pattern="\s*[6-9][0-9]{9}\s*" inputmode="numeric" title="Enter 10 digits beginning with 6, 7, 8, or 9. Surrounding spaces are ignored." value="{{ user.phone }}" autocomplete="tel" required></div>
+        <div class="field"><label>Username</label><input value="{{ user.username }}" readonly aria-readonly="true"></div>
+        {% if patient %}
+        <div class="field field-span"><label for="address">Address</label><textarea id="address" name="address" rows="3" required>{{ patient.address }}</textarea></div>
+        <div class="field"><label for="emergency_contact">Emergency contact</label><input id="emergency_contact" name="emergency_contact" type="tel" pattern="\s*[6-9][0-9]{9}\s*" inputmode="numeric" title="Enter 10 digits beginning with 6, 7, 8, or 9. Surrounding spaces are ignored." value="{{ patient.emergency_contact }}" required></div>
+        {% endif %}
+        {% if doctor %}
+        <div class="field"><label>Department</label><input value="{{ doctor.department }}" readonly aria-readonly="true"></div>
+        <div class="field"><label>Specialization</label><input value="{{ doctor.specialization }}" readonly aria-readonly="true"></div>
+        {% endif %}
+    </div>
+    <div class="form-actions"><button class="button button-primary" type="submit">Save profile</button><a class="button button-quiet" href="{{ url_for('index') }}">Cancel</a></div>
+</form>
+{% endblock %}

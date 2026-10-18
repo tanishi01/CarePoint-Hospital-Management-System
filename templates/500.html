@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Service unavailable{% endblock %}
+{% block content %}
+<section class="error-state card">
+    <p class="eyebrow">ERROR 500</p><h1>We couldn't complete that request.</h1>
+    <p>Please try again in a moment. If the issue continues, contact the hospital administrator.</p>
+    <a class="button button-primary" href="{{ url_for('index') }}">Return to CarePoint</a>
+</section>
+{% endblock %}

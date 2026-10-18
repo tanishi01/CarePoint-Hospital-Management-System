@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Emergency leave{% endblock %}
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">DOCTOR WORKSPACE · LEAVE</p>
+    <h1>Emergency leave</h1>
+    <p>Submit leave for a registered working day and track the review status.</p>
+</section>
+
+<form method="post" class="card form-card leave-form">
+    <h2 class="form-title">Submit a leave request</h2>
+    <div class="form-grid">
+        <div class="field">
+            <label for="leave-date">Date</label>
+            <input id="leave-date" name="leave_date" type="date" min="{{ today }}" required>
+        </div>
+        <div class="field">
+            <label for="leave-kind">Requested time</label>
+            <select id="leave-kind" name="leave_kind" required>
+                <option value="full_day">Full working day</option>
+                <option value="partial">Specific hours</option>
+            </select>
+        </div>
+        <div class="field leave-time-field" hidden>
+            <label for="leave-start">Start time</label>
+            <input id="leave-start" name="start_time" type="time" disabled>
+        </div>
+        <div class="field leave-time-field" hidden>
+            <label for="leave-end">End time</label>
+            <input id="leave-end" name="end_time" type="time" disabled>
+        </div>
+        <div class="field field-span">
+            <label for="leave-reason">Reason</label>
+            <textarea id="leave-reason" name="reason" rows="4" maxlength="2000" required></textarea>
+        </div>
+    </div>
+    <div class="form-actions">
+        <button class="button button-primary" type="submit">Submit for review</button>
+    </div>
+</form>
+
+<section class="card panel">
+    <div class="panel-heading"><div><p class="eyebrow">YOUR REQUESTS</p><h2>Leave history</h2></div></div>
+    {% if leave_requests %}
+    <div class="leave-request-list">
+        {% for leave in leave_requests %}
+        <article class="leave-request-card">
+            <div class="leave-request-heading">
+                <div><h3>{{ leave.leave_date }}</h3><p>{{ 'Full working day' if leave.is_full_day else leave.start_time ~ '–' ~ leave.end_time }}</p></div>
+                <span class="status status-{{ leave.status }}">{{ leave.status|title }}</span>
+            </div>
+            <p class="leave-request-reason">{{ leave.reason }}</p>
+            {% if leave.rejection_reason %}<p class="leave-outcome"><strong>Rejection reason:</strong> {{ leave.rejection_reason }}</p>{% endif %}
+            {% if leave.cancellation_reason %}<p class="leave-outcome"><strong>Appointment cancellation reason:</strong> {{ leave.cancellation_reason }}</p>{% endif %}
+            <small>Submitted {{ leave.submitted_at }}</small>
+            {% if leave.status == 'pending' %}
+            <form method="post" action="{{ url_for('doctor.cancel_leave_request', leave_id=leave.id) }}" class="leave-cancel-form" onsubmit="return window.confirm('Cancel this pending leave request?');">
+                <button class="button button-small leave-cancel-button" type="submit">Cancel request</button>
+            </form>
+            {% endif %}
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}<div class="empty-state">You have not submitted any leave requests.</div>{% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+    (function () {
+        var kind = document.getElementById('leave-kind');
+        var fields = document.querySelectorAll('.leave-time-field');
+        function updateTimeFields() {
+            var partial = kind.value === 'partial';
+            fields.forEach(function (field) {
+                var input = field.querySelector('input');
+                field.hidden = !partial;
+                input.disabled = !partial;
+                input.required = partial;
+            });
+        }
+        kind.addEventListener('change', updateTimeFields);
+        updateTimeFields();
+    }());
+</script>
+{% endblock %}

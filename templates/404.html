@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Page not found{% endblock %}
+{% block content %}
+<section class="error-state card">
+    <p class="eyebrow">ERROR 404</p><h1>We couldn't find that page.</h1>
+    <p>The page may have moved or the address may be incorrect.</p>
+    <a class="button button-primary" href="{{ url_for('index') }}">Return to CarePoint</a>
+</section>
+{% endblock %}

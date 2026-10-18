@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Hospital reports{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">ADMINISTRATION</p><h1>Operational reports</h1><p>Current appointment, revenue, and pharmacy summaries.</p></section>
+<section class="report-grid">
+    <article class="card panel"><div class="panel-heading"><div><p class="eyebrow">APPOINTMENTS</p><h2>By status</h2></div></div>
+        {% if appointment_summary %}
+        <div class="report-list">{% for item in appointment_summary %}<div><span class="status status-{{ item.status }}">{{ item.status|replace('_', ' ')|title }}</span><strong>{{ item.count }}</strong></div>{% endfor %}</div>
+        {% else %}<div class="empty-state">No appointment data is available.</div>{% endif %}
+    </article>
+    <article class="card panel"><div class="panel-heading"><div><p class="eyebrow">FINANCE</p><h2>Revenue summary</h2></div></div>
+        <div class="revenue-total"><span>Total billed</span><strong>₹{{ "%.2f"|format(((revenue_summary|default({})).total_billed|default(0, true))|float) }}</strong></div>
+        <div class="revenue-total"><span>Total collected</span><strong>₹{{ "%.2f"|format(((revenue_summary|default({})).total_collected|default(0, true))|float) }}</strong></div>
+    </article>
+    <article class="card panel"><div class="panel-heading"><div><p class="eyebrow">PHARMACY</p><h2>Low-stock items</h2></div><a href="{{ url_for('pharmacy.low_stock_alerts') }}">Inventory alerts</a></div>
+        {% if pharmacy_summary %}
+        <div class="report-list">{% for medicine in pharmacy_summary %}<div><span>{{ medicine.name }}<small>Threshold: {{ medicine.min_stock_threshold }}</small></span><strong class="stock-low">{{ medicine.stock_quantity }} left</strong></div>{% endfor %}</div>
+        {% else %}<div class="empty-state">No medicines are currently at or below their minimum stock threshold.</div>{% endif %}
+    </article>
+</section>
+{% endblock %}

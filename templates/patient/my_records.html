@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}My medical records{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">PATIENT PORTAL</p><h1>Medical records</h1><p>Consultation notes and prescriptions recorded by your care team.</p></section>
+{% if records %}
+<div class="record-list">
+    {% for record in records %}
+    <article class="card record-card">
+        <div class="record-heading"><div><p class="eyebrow">{{ record.consultation_date }}</p><h2>{{ record.diagnosis }}</h2><p>{{ record.doctor_name }} · {{ record.department }} · Visit {{ record.appointment_date }}</p></div></div>
+        <div class="record-notes"><h3>Treatment notes</h3><p>{{ record.treatment_notes }}</p></div>
+        {% if record.prescription_items %}
+        <div class="prescription-block"><h3>Prescription</h3><div class="table-wrap"><table><thead><tr><th>Medicine</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Quantity</th></tr></thead><tbody>
+        {% for item in record.prescription_items %}
+            <tr><td>{{ item.medicine_name }}<small>{{ item.generic_name }}</small></td><td>{{ item.dosage }}</td><td>{{ item.frequency }}</td><td>{{ item.duration }}</td><td>{{ item.quantity }}</td></tr>
+        {% endfor %}
+        </tbody></table></div></div>
+        {% else %}<p class="muted-note">No prescription items were recorded for this visit.</p>{% endif %}
+    </article>
+    {% endfor %}
+</div>
+{% else %}<div class="empty-state">No medical records are available.</div>{% endif %}
+{% endblock %}

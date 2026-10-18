@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Doctor overview{% endblock %}
+{% block content %}
+<section class="page-heading heading-with-action">
+    <div><p class="eyebrow">DOCTOR WORKSPACE</p><h1>Today's care schedule</h1><p>Review appointments and document completed consultations.</p></div>
+    <a class="button button-primary" href="{{ url_for('doctor.appointments') }}">All appointments</a>
+</section>
+<section class="card panel">
+    <div class="panel-heading"><div><p class="eyebrow">TODAY</p><h2>Appointments</h2></div><span class="count-badge">{{ today_appointments|default([])|length }}</span></div>
+    {% if today_appointments %}
+    <div class="table-wrap"><table><thead><tr><th>Time</th><th>Patient</th><th>Contact</th><th>Details</th><th>Status</th><th>Next step</th></tr></thead><tbody>
+    {% for appointment in today_appointments %}
+        <tr>
+            <td>{{ appointment.appointment_time }}</td>
+            <td><strong>{{ appointment.patient_name }}</strong><small>{{ appointment.age }} years · {{ appointment.gender }}</small></td>
+            <td>{{ appointment.phone }}</td>
+            <td>{{ appointment.reason }}</td>
+            <td><span class="status status-{{ appointment.status }}">{{ appointment.status|replace('_', ' ')|title }}</span></td>
+            <td class="row-actions"><a class="button button-small" href="{{ url_for('doctor.consultation', appointment_id=appointment.id) }}">Consultation</a><a href="{{ url_for('doctor.patient_history', patient_id=appointment.patient_id) }}">History</a></td>
+        </tr>
+    {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">There are no appointments scheduled for today.</div>{% endif %}
+</section>
+<section class="card panel">
+    <div class="panel-heading"><div><p class="eyebrow">NEEDS REVIEW</p><h2>Pending approvals</h2></div></div>
+    {% if pending_approvals %}
+    <div class="table-wrap"><table><thead><tr><th>Patient</th><th>Date</th><th>Time</th><th>Reason</th><th>Review</th></tr></thead><tbody>
+    {% for appointment in pending_approvals %}
+        <tr><td>{{ appointment.patient_name }}</td><td>{{ appointment.appointment_date }}</td><td>{{ appointment.appointment_time }}</td><td>{{ appointment.reason }}</td><td><a href="{{ url_for('doctor.appointments') }}">Review appointment</a></td></tr>
+    {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">No appointments are waiting for approval.</div>{% endif %}
+</section>
+{% endblock %}
